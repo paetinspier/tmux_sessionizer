@@ -92,7 +92,6 @@ func main() {
 		if err != nil {
 			fmt.Printf("Error ExecCmd() new-session with name and path -> %v", err)
 		}
-		//os.Exit(0)
 	}
 
 	if !gotmux.IsInsideTmux() {
@@ -100,13 +99,11 @@ func main() {
 		if err != nil {
 			fmt.Printf("Error ExecCmd() attach with name -> %v", err)
 		}
-		//os.Exit(0)
 	}
 
 	err = ExecCmd([]string{"switch-client", "-t", selectedName})
 	if err != nil {
 		fmt.Printf("Error ExecCmd() switch-client with name -> %v", err)
 	}
-	//os.Exit(0)
 
 }
