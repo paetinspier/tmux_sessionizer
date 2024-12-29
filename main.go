@@ -1,66 +1,29 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
-	"syscall"
 
 	gotmux "github.com/jubnzv/go-tmux"
+	"github.com/paetinspier/tmux_sessionizer/utils"
 )
 
-func ExecCmd(args []string) error {
-	tmux, err := exec.LookPath("tmux")
-	if err != nil {
-		return err
-	}
-
-	args = append([]string{tmux}, args...)
-
-	if err := syscall.Exec(tmux, args, os.Environ()); err != nil {
-		return err
-	}
-
-	return nil
+func runHelpDocs() {
+	utils.DisplayHelpDocs()
 }
 
-func ExecCmdWithoutStop(args []string) error {
-	tmux, err := exec.LookPath("tmux")
+func runTmuxSession(name string) {
+	selectedName, selectedPath, err := utils.RunFzFSearch()
 	if err != nil {
-		return fmt.Errorf("tmux not found: %w", err)
+		fmt.Println("error with RunFzFSearch()")
+		os.Exit(0)
 	}
-
-	cmd := exec.Command(tmux, args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error running tmux: %w", err)
+	
+	if name != "" {
+		selectedName = name
 	}
-
-	return nil
-}
-
-func main() {
-	fzfCmd := "find ~/code ~/.config/ ~/ -mindepth 1 -maxdepth 2 -type d | fzf"
-	cmd := exec.Command("bash", "-c", fzfCmd)
-
-	cmd.Stdin = os.Stdin
-	cmd.Stderr = os.Stderr
-
-	output, err := cmd.Output()
-	if err != nil {
-		fmt.Printf("Error running fzf command: %v\n", err)
-	}
-	if len(string(output)) < 1 {
-		os.Exit(0)	
-	}
-	selectedPathSlugs := strings.Split(string(output), "/")
-
-	selectedName := strings.ReplaceAll(strings.Trim(strings.Join(selectedPathSlugs[3:], "/"), "\n"), ".", "_")
-	selectedPath := strings.TrimSpace(strings.Trim(string(output), "\n"))
 
 	server := new(gotmux.Server)
 	sessions, err := server.ListSessions()
@@ -70,7 +33,7 @@ func main() {
 
 	if len(sessions) == 0 && !gotmux.IsInsideTmux() {
 		fmt.Println("creating new session")
-		err := ExecCmd([]string{"new-session", "-s", selectedName, "-c", selectedPath})
+		err := utils.ExecTmuxCmd([]string{"new-session", "-s", selectedName, "-c", selectedPath})
 		if err != nil {
 			fmt.Printf("Error ExecCmd() new-session with name and path -> %v", err)
 		}
@@ -82,28 +45,49 @@ func main() {
 	}
 
 	if !hasSession && gotmux.IsInsideTmux() {
-		err := ExecCmdWithoutStop([]string{"new-session", "-d", "-s", selectedName, "-c", selectedPath})
+		err := utils.ExecTmuxCmdWithoutStop([]string{"new-session", "-d", "-s", selectedName, "-c", selectedPath})
 		if err != nil {
 			fmt.Printf("Error ExecCmd() new-session detached with name and path -> %v", err)
 		}
 	}
 	if !hasSession && !gotmux.IsInsideTmux() {
-		err := ExecCmd([]string{"new-session", "-s", selectedName, "-c", selectedPath})
+		err := utils.ExecTmuxCmd([]string{"new-session", "-s", selectedName, "-c", selectedPath})
 		if err != nil {
 			fmt.Printf("Error ExecCmd() new-session with name and path -> %v", err)
 		}
 	}
 
 	if !gotmux.IsInsideTmux() {
-		err := ExecCmd([]string{"a", "-t", selectedName})
+		err := utils.ExecTmuxCmd([]string{"a", "-t", selectedName})
 		if err != nil {
 			fmt.Printf("Error ExecCmd() attach with name -> %v", err)
 		}
 	}
 
-	err = ExecCmd([]string{"switch-client", "-t", selectedName})
+	err = utils.ExecTmuxCmd([]string{"switch-client", "-t", selectedName})
 	if err != nil {
 		fmt.Printf("Error ExecCmd() switch-client with name -> %v", err)
 	}
+}
 
+func main() {
+	var help bool
+	var name bool
+	flag.BoolVar(&help, "h", false, "help docs")
+	flag.BoolVar(&name, "n", false, "help docs")
+	flag.BoolVar(&name, "name", false, "help docs")
+
+	flag.Parse()
+
+	if help {
+		runHelpDocs()
+		os.Exit(0)
+	}
+
+	if name {
+		n := strings.Join(flag.Args(), "-")
+		runTmuxSession(n)
+	}
+
+	runTmuxSession("")
 }
