@@ -74,8 +74,8 @@ func main() {
 	var help bool
 	var name bool
 	flag.BoolVar(&help, "h", false, "help docs")
-	flag.BoolVar(&name, "n", false, "help docs")
-	flag.BoolVar(&name, "name", false, "help docs")
+	flag.BoolVar(&name, "n", false, "name new tmux session")
+	flag.BoolVar(&name, "name", false, "name new tmux session")
 
 	flag.Parse()
 
