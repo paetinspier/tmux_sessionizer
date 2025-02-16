@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 )
@@ -42,7 +43,8 @@ func ExecTmuxCmdWithoutStop(args []string) error {
 }
 
 func RunFzFSearch() (string, string, error) {
-	fzfCmd := "find ~/code ~/.config/ ~/ -mindepth 1 -maxdepth 2 -type d | fzf"
+	paths := getSearchPaths()
+	fzfCmd := fmt.Sprintf("find %s -mindepth 1 -maxdepth 2 -type d | fzf", paths)
 	cmd := exec.Command("bash", "-c", fzfCmd)
 
 	cmd.Stdin = os.Stdin
@@ -63,33 +65,30 @@ func RunFzFSearch() (string, string, error) {
 	return name, path, nil
 }
 
-func DisplayHelpDocs() {
-	helpDocTitle()
+func getSearchPaths() string {
+	exePath, err := os.Executable()
+	if err != nil {
+		fmt.Println("error getting executable path:", err)
+		return "~/"
+	}
 
-	fmt.Println("    Usage: ts [option]")
-	fmt.Println()
-	fmt.Println("    Open a new project folder.")
-	fmt.Println()
-	fmt.Println("    Options:")
-	fmt.Println("        -h                                 Display help docs")
-	fmt.Println("        -n, -name <session name>           Specify tmux session name (default session name is created using the session path)")
-	fmt.Print("\n\n\n")
-}
+	exeDir := filepath.Dir(exePath)
+	filePath := filepath.Join(exeDir, "search_directories.txt")
 
-func helpDocTitle() {
-	l1 := "████████╗███╗   ███╗██╗   ██╗██╗  ██╗    ███████╗███████╗███████╗██╗ ██████╗ ███╗   ██╗██╗███████╗███████╗██████╗ "
-	l2 := "╚══██╔══╝████╗ ████║██║   ██║╚██╗██╔╝    ██╔════╝██╔════╝██╔════╝██║██╔═══██╗████╗  ██║██║╚══███╔╝██╔════╝██╔══██╗"
-	l3 := "   ██║   ██╔████╔██║██║   ██║ ╚███╔╝     ███████╗█████╗  ███████╗██║██║   ██║██╔██╗ ██║██║  ███╔╝ █████╗  ██████╔╝"
-	l4 := "   ██║   ██║╚██╔╝██║██║   ██║ ██╔██╗     ╚════██║██╔══╝  ╚════██║██║██║   ██║██║╚██╗██║██║ ███╔╝  ██╔══╝  ██╔══██╗"
-	l5 := "   ██║   ██║ ╚═╝ ██║╚██████╔╝██╔╝ ██╗    ███████║███████╗███████║██║╚██████╔╝██║ ╚████║██║███████╗███████╗██║  ██║"
-	l6 := "   ╚═╝   ╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝    ╚══════╝╚══════╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝╚══════╝╚══════╝╚═╝  ╚═╝"
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		fmt.Println("error reading search directories", err)
+	}
 
-	fmt.Print("\n\n\n")
-	fmt.Println(l1)
-	fmt.Println(l2)
-	fmt.Println(l3)
-	fmt.Println(l4)
-	fmt.Println(l5)
-	fmt.Println(l6)
-	fmt.Print("\n\n\n")
+	text := string(data)
+
+	lines := strings.Split(text, "\n")
+
+	paths := strings.Join(lines, " ")
+
+	if len(paths) > 0 {
+		return paths
+	} else {
+		return "~/"
+	}
 }
