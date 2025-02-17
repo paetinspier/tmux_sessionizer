@@ -2,10 +2,12 @@ package commands
 
 import (
 	"fmt"
+	"os"
 )
 
 func RunHelpDocs() {
 	displayHelpDocs()
+	os.Exit(0)
 }
 
 func displayHelpDocs() {

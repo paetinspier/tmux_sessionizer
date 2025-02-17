@@ -9,9 +9,9 @@ import (
 )
 
 func RunTmuxSession(name string) {
-	selectedName, selectedPath, err := utils.RunFzFSearch()
+	selectedName, selectedPath, err := utils.RunFzFSearchWithSearchDirectory()
 	if err != nil {
-		fmt.Println("error with RunFzFSearch()")
+		fmt.Println("error with RunFzFSearchWithSearchPath()")
 		os.Exit(0)
 	}
 

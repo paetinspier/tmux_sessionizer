@@ -1,3 +1,2 @@
-~/code/
-~/.config/
-~/
+/home/paetin/code
+/home/paetin/.config
